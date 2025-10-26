@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useCallback } from 'react';
 import { InvitationConfig, CardState } from './types';
 import { DEFAULT_CONFIG } from './constants';
