@@ -4,14 +4,35 @@ import { InvitationConfig } from './types';
 interface CardFrontProps {
     config: InvitationConfig;
     isOpened: boolean;
+    onClose: () => void;
 }
 
-const CardFront: React.FC<CardFrontProps> = ({ config, isOpened }) => {
+const CardFront: React.FC<CardFrontProps> = ({ config, isOpened, onClose }) => {
     if (!isOpened) return null;
 
+    const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (e.target === e.currentTarget) {
+            onClose();
+        }
+    };
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-8 animate-fade-in">
+        <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={handleBackdropClick}
+        >
+            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-8 animate-fade-in relative mx-auto">
+                {/* Close Button */}
+                <button
+                    onClick={onClose}
+                    className="absolute -top-2 -right-2 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-shadow z-10 hover:bg-gray-50"
+                    title="Close invitation"
+                >
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
                 {/* Header */}
                 <div className="text-center mb-6">
                     <h1 className="text-3xl font-bold text-gray-800 mb-2">
@@ -47,8 +68,17 @@ const CardFront: React.FC<CardFrontProps> = ({ config, isOpened }) => {
                     </p>
                 </div>
 
+                {/* Additional Notes */}
+                {config.additionalNotes && (
+                    <div className="mb-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                        <p className="text-sm text-amber-800 text-center">
+                            {config.additionalNotes}
+                        </p>
+                    </div>
+                )}
+
                 {/* Host */}
-                <div className="text-center">
+                <div className="text-center border-t pt-4">
                     <p className="text-gray-600 font-semibold">
                         {config.hostName}
                     </p>

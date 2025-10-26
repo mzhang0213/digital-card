@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { InvitationConfig, CardState } from './types';
+import { DEFAULT_CONFIG } from './constants';
 import CardBack from './CardBack';
 import CardFront from './CardFront';
 import Stamp from './Stamp';
 import GlitterEffect from './GlitterEffect';
-import {DEFAULT_CONFIG} from "@/components/InvitationCard/constants";
 
 interface InvitationCardProps {
     config?: Partial<InvitationConfig>;
@@ -14,10 +14,10 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
                                                            config: customConfig
                                                        }) => {
     const [cardState, setCardState] = useState<CardState>({
-        isAnimating: false,
         isOpened: false,
         isStamped: true,
         isHovered: false,
+        isAnimating: false,
         tilt: { x: 0, y: 0 }
     });
 
@@ -27,7 +27,7 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
     };
 
     const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-        if (!config.enableTilt || cardState.isOpened) return;
+        if (!config.enableTilt || cardState.isOpened || cardState.isAnimating) return;
 
         const card = e.currentTarget;
         const rect = card.getBoundingClientRect();
@@ -44,12 +44,12 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
             ...prev,
             tilt: { x: tiltX, y: tiltY }
         }));
-    }, [config.enableTilt, cardState.isOpened]);
+    }, [config.enableTilt, cardState.isOpened, cardState.isAnimating]);
 
     const handleMouseEnter = useCallback(() => {
-        if (cardState.isOpened) return;
+        if (cardState.isOpened || cardState.isAnimating) return;
         setCardState(prev => ({ ...prev, isHovered: true }));
-    }, [cardState.isOpened]);
+    }, [cardState.isOpened, cardState.isAnimating]);
 
     const handleMouseLeave = useCallback(() => {
         setCardState(prev => ({
@@ -60,17 +60,26 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
     }, []);
 
     const handleStampClick = useCallback(() => {
-        // Remove stamp with animation
-        setCardState(prev => ({ ...prev, isStamped: false }));
+        if (cardState.isAnimating) return;
+
+        // Start animation
+        setCardState(prev => ({ ...prev, isAnimating: true, isStamped: false }));
 
         // Open card after stamp animation
         setTimeout(() => {
-            setCardState(prev => ({ ...prev, isOpened: true }));
+            setCardState(prev => ({
+                ...prev,
+                isOpened: true,
+                isAnimating: false
+            }));
         }, 500);
-    }, []);
+    }, [cardState.isAnimating]);
 
     const handleCloseCard = useCallback(() => {
-        setCardState(prev => ({ ...prev, isOpened: false }));
+        setCardState(prev => ({
+            ...prev,
+            isOpened: false
+        }));
     }, []);
 
     return (
@@ -81,7 +90,7 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
                 onMouseMove={handleMouseMove}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
-                onClick={cardState.isStamped ? handleStampClick : undefined}
+                onClick={cardState.isStamped && !cardState.isAnimating ? handleStampClick : undefined}
             >
                 {/* Card Back */}
                 <CardBack
@@ -100,18 +109,23 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
                 {/* Glitter Effect */}
                 {config.enableGlitter && (
                     <GlitterEffect
-                        isActive={cardState.isHovered && !cardState.isOpened}
+                        isActive={cardState.isHovered && !cardState.isOpened && !cardState.isAnimating}
                         color={config.secondaryColor}
                     />
                 )}
 
                 {/* Instruction */}
-                {cardState.isStamped && (
+                {cardState.isStamped && !cardState.isAnimating && (
                     <div className="absolute bottom-4 left-0 right-0 text-center">
                         <p className="text-sm text-gray-600 font-medium animate-pulse">
                             Click the stamp to open
                         </p>
                     </div>
+                )}
+
+                {/* Opening Animation Overlay */}
+                {cardState.isAnimating && (
+                    <div className="absolute inset-0 bg-white bg-opacity-50 rounded-lg animate-pulse"></div>
                 )}
             </div>
 
@@ -119,20 +133,8 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
             <CardFront
                 config={config}
                 isOpened={cardState.isOpened}
+                onClose={handleCloseCard}
             />
-
-            {/* Close Button for Opened Card */}
-            {cardState.isOpened && (
-                <button
-                    onClick={handleCloseCard}
-                    className="fixed top-4 right-4 z-50 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-shadow"
-                    title="Close invitation"
-                >
-                    <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            )}
         </div>
     );
 };
